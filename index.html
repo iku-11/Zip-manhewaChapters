@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>💜 ضغط الفصول ZIP 💜</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    body {
+      font-family: "Tajawal", sans-serif;
+      background: linear-gradient(135deg, #5a189a, #7b2cbf);
+      color: white;
+      text-align: center;
+      padding: 40px;
+      overflow-x: hidden;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    h1 { margin-bottom: 8px; }
+    .subtitle { color:#ccc;margin-bottom:20px;font-size:14px; }
+
+    .box {
+      background: linear-gradient(145deg,#1a1a1a,#2b2b2b);
+      padding:25px;
+      border-radius:20px;
+      width:90%;
+      max-width:500px;
+      margin:auto;
+      box-shadow:0 0 20px rgba(0,0,0,0.5);
+    }
+
+    input[type="file"], input[type="text"] {
+      width:90%;
+      margin:10px 0;
+      padding:10px;
+      border:none;
+      border-radius:10px;
+      outline:none;
+      background:rgba(255,255,255,0.15);
+      color:white;
+      font-size:15px;
+      text-align:center;
+    }
+
+    button {
+      background:#9d4edd;
+      border:none;
+      padding:10px 25px;
+      color:white;
+      font-size:16px;
+      border-radius:10px;
+      cursor:pointer;
+      transition:0.3s;
+    }
+    button:hover{ background:#c77dff; }
+
+    #preview {
+      margin-top:20px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+    }
+
+    .item {
+      background:#2e2e2e;
+      width:90%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:grab;
+      transition:transform 0.1s ease, background 0.2s ease;
+      touch-action:none;
+    }
+
+    .item:hover{ background:#3a3a3a; transform:scale(1.02); }
+
+    .item img {
+      width:60px; height:80px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-left:10px;
+      transition:transform 0.2s;
+    }
+
+    .item img:hover{ transform:scale(1.05); }
+
+    .delete-btn, .view-btn-small {
+      border:none;
+      color:white;
+      border-radius:8px;
+      padding:5px 10px;
+      cursor:pointer;
+      font-size:14px;
+      transition:0.2s;
+    }
+    .delete-btn{ background:#ff4d4d; }
+    .delete-btn:hover{ background:#ff6b6b; transform:scale(1.1); }
+    .view-btn-small{ background:#4cc9f0; }
+    .view-btn-small:hover{ background:#72efdd; transform:scale(1.1); }
+
+    .add-btn, .view-btn {
+      margin-top:15px;
+      background:#5a189a;
+      transition:all 0.2s;
+    }
+    .add-btn:hover,.view-btn:hover{
+      background:#7b2cbf;
+      transform:scale(1.05);
+    }
+
+    .ghost{ opacity:0.4; transform:scale(0.98); }
+
+    /* 🔹 عرض الويب تون */
+    #viewer {
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      background:rgba(0,0,0,0.4);
+      padding:0;
+      overflow-y:auto;
+      height:100vh;
+      width:100%;
+      border-radius:10px;
+      -webkit-overflow-scrolling:touch;
+      scroll-behavior:smooth;
+      overscroll-behavior:contain;
+    }
+
+    #viewerImages {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:15px;
+      width:100%;
+      padding:70px 0 40px;
+    }
+
+    #viewerImages img {
+      width:95%;
+      max-width:500px;
+      border-radius:0;
+      object-fit:contain;
+      box-shadow:0 0 10px rgba(0,0,0,0.4);
+      transition:transform 0.2s ease;
+    }
+
+    #viewerImages img:active { transform:scale(0.98); }
+
+    /* 🔹 زر الرجوع الثابت */
+    #backBtn {
+      position:fixed;
+      top:10px; right:10px;
+      z-index:9999;
+      background:#7b2cbf;
+      border-radius:10px;
+      padding:10px 18px;
+      font-size:16px;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+      opacity:0.9;
+    }
+    #backBtn:hover{ opacity:1; transform:scale(1.05); }
+
+    /* 🔍 نافذة عرض الصورة */
+    #imageModal {
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.8);
+      justify-content:center;
+      align-items:center;
+      z-index:999;
+    }
+    #imageModal img{
+      max-width:90%;
+      max-height:90%;
+      border-radius:0;
+      box-shadow:0 0 25px rgba(0,0,0,0.8);
+    }
+    #closeModal{
+      position:absolute;
+      top:20px; right:30px;
+      font-size:28px;
+      color:white;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="box" id="mainBox">
+    <h1>💜 ضغط الفصول ZIP 💜</h1>
+    <div class="subtitle">AC العهد القرمزي 🩶<br>من صنع كورونا 🤍</div>
+
+    <form id="uploadForm">
+      <input type="text" id="zipName" placeholder="اسم الملف (مثال: الفصل 10)" required>
+      <input type="file" id="images" accept="image/*" multiple style="display:none">
+      <br>
+      <button type="submit">📦 ضغط وتحميل ZIP</button>
+    </form>
+
+    <div id="preview"></div>
+
+    <button id="addImages" class="add-btn">➕ إضافة صور جديدة</button>
+    <button id="viewOrder" class="view-btn">📖 عرض الترتيب الحالي</button>
+  </div>
+
+  <!-- 👀 قارئ الصور -->
+  <div id="viewer">
+    <button id="backBtn">🔙 رجوع</button>
+    <div id="viewerImages"></div>
+  </div>
+
+  <!-- 🔍 نافذة عرض الصورة -->
+  <div id="imageModal">
+    <span id="closeModal">✖</span>
+    <img id="modalImg" src="">
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("images");
+    const preview = document.getElementById("preview");
+    const addBtn = document.getElementById("addImages");
+    const viewBtn = document.getElementById("viewOrder");
+    const viewer = document.getElementById("viewer");
+    const viewerImages = document.getElementById("viewerImages");
+    const backBtn = document.getElementById("backBtn");
+    const mainBox = document.getElementById("mainBox");
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImg");
+    const closeModal = document.getElementById("closeModal");
+    let filesArr = [];
+
+    fileInput.addEventListener("change", (e) => {
+      const newFiles = Array.from(e.target.files);
+      filesArr = filesArr.concat(newFiles);
+      renderList();
+      fileInput.value = "";
+    });
+
+    addBtn.addEventListener("click", () => fileInput.click());
+
+    function renderList() {
+      preview.innerHTML = "";
+      filesArr.forEach((file, index) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <button class="delete-btn">🗑️</button>
+          <button class="view-btn-small">👁️ عرض</button>
+          <span>${index + 1}</span>
+          <img src="${URL.createObjectURL(file)}">
+        `;
+        preview.appendChild(div);
+
+        div.querySelector(".delete-btn").onclick = () => {
+          filesArr.splice(index, 1);
+          renderList();
+        };
+        div.querySelector(".view-btn-small").onclick = () => {
+          modalImg.src = URL.createObjectURL(file);
+          modal.style.display = "flex";
+        };
+      });
+    }
+
+    closeModal.onclick = () => modal.style.display = "none";
+    modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+    new Sortable(preview, {
+      animation: 0,
+      easing: "linear",
+      forceFallback: true,
+      fallbackOnBody: true,
+      fallbackTolerance: 3,
+      delay: 0,
+      touchStartThreshold: 0,
+      ghostClass: "ghost",
+      chosenClass: "chosen",
+      dragClass: "dragging",
+      onEnd: evt => {
+        const moved = filesArr.splice(evt.oldIndex, 1)[0];
+        filesArr.splice(evt.newIndex, 0, moved);
+        renderList();
+      },
+    });
+
+    // 🔥 الكود المعدل لإنشاء ZIP - مؤكد 100% يشتغل
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      if (!filesArr.length) {
+        alert("رجاءً اختر صور أولاً!");
+        return;
+      }
+
+      const zipName = document.getElementById("zipName").value.trim() || "chapter";
+      
+      try {
+        const zip = new JSZip();
+        
+        // أضف كل الصور لل ZIP مع الاحتفاظ بالامتداد الأصلي
+        for (let i = 0; i < filesArr.length; i++) {
+          const file = filesArr[i];
+          const fileName = file.name;
+          const ext = fileName.split('.').pop().toLowerCase();
+          zip.file(`${i + 1}.${ext}`, file);
+        }
+        
+        // أنشئ ملف ZIP
+        const content = await zip.generateAsync({
+          type: "blob",
+          compression: "DEFLATE", // ضغط عادي
+          compressionOptions: { level: 6 }
+        });
+        
+        // حمل الملف
+        const url = URL.createObjectURL(content);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${zipName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log("تم إنشاء ZIP بنجاح!");
+        
+      } catch (error) {
+        console.error("Error creating ZIP:", error);
+        alert("حدث خطأ في إنشاء الملف! حاول مرة أخرى.");
+      }
+    });
+
+    viewBtn.onclick = () => {
+      if (!filesArr.length) return alert("لا توجد صور للعرض!");
+      viewerImages.innerHTML = "";
+      filesArr.forEach(f => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(f);
+        viewerImages.appendChild(img);
+      });
+      mainBox.style.display = "none";
+      viewer.style.display = "flex";
+      viewer.scrollTo(0, 0);
+    };
+
+    backBtn.onclick = () => {
+      viewer.style.display = "none";
+      mainBox.style.display = "block";
+    };
+  </script>
+</body>
+  </html>
